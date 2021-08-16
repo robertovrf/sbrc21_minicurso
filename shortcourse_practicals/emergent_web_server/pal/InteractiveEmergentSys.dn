@@ -1,0 +1,292 @@
+// InteractiveEmergentSys.dn
+// A component that provides interactive access to perception module
+//
+// Author: Roberto Rodrigues Filho
+// February @ 2017
+
+const char debugMSG[] = "[@InteractiveEmergentSys]"
+
+const char HELP[] 			 		= "help"
+const char GET_CONFIG[]		 		= "get_config"
+const char GET_ALL_CONFIGS[] 		= "get_all_configs"
+const char SET_CONFIG[]   	 		= "set_config"
+const char ADD_COMP[] 		 		= "add_comp"
+const char REMOVE_COMP[] 	 		= "remove_comp"
+const char ADD_PROXY[]		 		= "add_proxy"
+const char REMOVE_PROXY[]	 		= "remove_proxy"
+const char GET_PROXIES[]	 		= "get_proxies"
+const char CHANGE_TEST[]	 		= "change_test"
+const char START_TEST[]				= "start_test"
+const char GET_PERCEPTION_DATA[] 	= "get_perception_data"
+const char TEST_MODE[]				= "test_mode"
+
+const char EXIT[] 			 		= "exit"
+
+component provides App requires io.Output out, data.IntUtil iu, io.Input in, data.StringUtil strUtil,
+	monitoring.Perception, util.RandomInt ran, time.Timer t, time.Calendar cal, time.DateUtil dateUtil,
+	data.DecUtil du, data.json.JSONParser parser, io.TextFile, net.TCPSocket {
+
+	Perception perception
+	String configsStr[] = null
+
+	void help() {
+		out.println("$(debugMSG) Command list:")
+		out.println(" $(debugMSG) $(HELP) - to list all commands")
+		out.println(" $(debugMSG) $(GET_CONFIG) show current config")
+		out.println(" $(debugMSG) $(GET_ALL_CONFIGS) list all configs")
+		out.println(" $(debugMSG) $(SET_CONFIG) a - set config to 'a'")
+		out.println(" $(debugMSG) $(ADD_PROXY) exp - add proxy")
+		out.println(" $(debugMSG) $(GET_PERCEPTION_DATA) - get perception data of current architecture")
+		out.println(" $(debugMSG) $(EXIT) - to finish execution")
+	}
+
+	void commandInterpret(char cmd[]) {
+		int collect_number = 1
+		String cmdList[] = strUtil.explode(cmd, " ")
+		int counter = 0
+		if (cmdList.arrayLength == 1) {
+			if (cmd == HELP) { help() }
+			else if (cmd == GET_CONFIG) {
+				out.println("$(debugMSG) Current config: $(perception.getConfig())")
+			} else if (cmd == GET_ALL_CONFIGS) {
+				configsStr = perception.getAllConfigs()
+				out.println("$(debugMSG) $(iu.intToString(configsStr.arrayLength)) configs:")
+				for (int i = 0; i < configsStr.arrayLength; i++) {
+					out.println("$(debugMSG) $(iu.intToString(i)): $(configsStr[i].string)")
+				}
+			} else if (cmd == CHANGE_TEST) {
+				perception.addProxy("|../pal/monitoring/proxies/DCProxy.o|*(*:ws.Web[0]:*)|")
+				out.println("Press enter to start test...")
+				in.readln()
+				counter = 0
+				perception.getPerceptionData()
+				TextFile resultTestFile
+				//file[i] = new TextFile(new char[]("HFU_HV_RESULTS/request-file-burst-", iu.intToString(collect_number), ".data"),
+				//File.FILE_ACCESS_WRITE)
+				String myConfs[] = perception.getAllConfigs()
+				for (int j = 0; j < 30; j++) {
+					resultTestFile = new TextFile(new char[]("results/NewResults", iu.intToString(collect_number), ".data"), File.FILE_ACCESS_WRITE)
+					for (int i = 0; i < myConfs.arrayLength; i++) {
+						perception.setConfig(myConfs[i].string)
+						while (counter < 15) {
+							t.sleep(5000)
+							resultTestFile.writeLine(perception.getPerceptionData())
+							out.println("Collected $(iu.intToString(counter+1))")
+							counter++
+						}
+						resultTestFile.writeLine("\n")
+						counter = 0
+					}
+					resultTestFile.close()
+					collect_number++
+				}
+			} else if (cmd == START_TEST) {
+				out.println("$(debugMSG) Starting test")
+				configsStr = perception.getAllConfigs()
+				TextFile file = new TextFile("result1.data", File.FILE_ACCESS_WRITE)
+				for (int i = 0; i < configsStr.arrayLength; i++) {
+					if (i > 0) { file.writeLine("\n") }
+					printInfoArchictureToFile(configsStr[i].string, file)
+					perception.setConfig(configsStr[i].string)
+					for (counter = 0; counter < 5; counter++) {
+						t.sleep(5000)
+						//handlePerceptionToFile(perception.getPerceptionData(), file)
+						file.writeLine(perception.getPerceptionData())
+					}
+				}
+				file.close()
+				out.println("$(debugMSG) End of test")
+			} else if (cmdList[0].string == GET_PROXIES) {
+				String proxies[] = perception.getProxies()
+				out.println("$(debugMSG) $(iu.intToString(proxies.arrayLength)) proxies:")
+				for (int pointer = 0; pointer < proxies.arrayLength; pointer++) {
+					out.println("$(debugMSG) $(proxies[pointer].string)")
+				}
+			} else if (cmdList[0].string == GET_PERCEPTION_DATA) {
+				handlePerception(perception.getPerceptionData())
+			} else if (cmdList[0].string == TEST_MODE) {
+				perception.addProxy("|../metacom/monitoring/proxies/HTTPProxy.o|*(*:HTTPGET[0]:*)|")
+				out.println("$(debugMSG) Test mode started.")
+				String allConfigs[] = perception.getAllConfigs()
+				char testCmd[] = ""
+				while (testCmd != "exit") {
+					printAllArchs(allConfigs)
+					out.print("select_arch> ")
+					testCmd = in.readln()
+					if (testCmd != "exit") {
+						perception.setConfig(allConfigs[iu.intFromString(testCmd)-1].string)
+						out.println("Start monitoring")
+						out.print("done?> ")
+						testCmd = in.readln()
+						out.println("$(interpretPerceptionData(perception.getPerceptionData()))")
+					}
+				}
+			} else { out.println("$(debugMSG) Invalid command.") }
+		} else if (cmdList.arrayLength >= 2) {
+			if (cmdList[0].string == SET_CONFIG) {
+				int indexConfig = iu.intFromString(cmdList[1].string)
+				perception.setConfig(configsStr[indexConfig].string)
+			} else if (cmdList[0].string == ADD_COMP) {
+				perception.addComp(new String[](new String(strUtil.subString(cmd, (ADD_COMP.arrayLength+1),(cmd.arrayLength-ADD_COMP.arrayLength-1)))))
+			} else if (cmdList[0].string == REMOVE_COMP) {
+				perception.removeComp(new String[](new String(strUtil.subString(cmd, (REMOVE_COMP.arrayLength+1),(cmd.arrayLength-REMOVE_COMP.arrayLength-1)))))
+			} else if (cmdList[0].string == REMOVE_PROXY) {
+				perception.removeProxy(strUtil.subString(cmd, (REMOVE_PROXY.arrayLength+1),(cmd.arrayLength-REMOVE_PROXY.arrayLength-1)))
+			} else if (cmdList[0].string == ADD_PROXY) {
+				perception.addProxy(strUtil.subString(cmd, (ADD_PROXY.arrayLength+1),(cmd.arrayLength-ADD_PROXY.arrayLength-1)))
+			} else { out.println("$(debugMSG) Invalid command.") }
+		} else { out.println("$(debugMSG) Invalid command.") }
+	}
+
+	void sendResponse(char msg[]) {
+		TCPSocket s = new TCPSocket()
+		if (!s.connect("localhost", 2020)) {
+			out.println("Error while trying to connect to server localhost - $(iu.intToString(2020))")
+		}
+		s.send(msg)
+		s.disconnect()
+	}
+
+	void sendClientDone() {
+		sendResponse("cycle_done")
+	}
+
+	void sendClientFinish() {
+		sendResponse("test_termination")
+	}
+
+	char[] interpretPerceptionData(char percData[]) {
+		char result[] = ""
+		JSONElement document = parser.parseDocument(percData)
+		JSONElement metricsJSON = parser.getValue(document, "metrics")
+		if (metricsJSON != null) {
+			for (int pointer = 0; pointer < metricsJSON.children.arrayLength; pointer++) {
+				JSONElement childrenMetrics = metricsJSON.children[pointer]
+				dec mValue = du.decFromString(parser.getValue(childrenMetrics, "value").value)
+				int mCount = iu.intFromString(parser.getValue(childrenMetrics, "count").value)
+				dec avg = mValue/mCount
+				result = new char[](result, "$(debugMSG) mValue: $(du.decToString(mValue))\n")
+				result = new char[](result, "$(debugMSG) mCount: $(iu.intToString(mCount))\n")
+				result = new char[](result, "$(debugMSG) avg: $(du.decToString(avg))\n")
+			}
+		}
+		JSONElement eventsJSON = parser.getValue(document, "events")
+		if (eventsJSON != null) {
+			for (int pointer = 0; pointer < eventsJSON.children.arrayLength; pointer++) {
+				JSONElement childrenMetrics = eventsJSON.children[pointer]
+				char eventCount[] = parser.getValue(childrenMetrics, "count").value
+				char startTime[] = parser.getValue(childrenMetrics, "startTime").value
+				char endTime[] = parser.getValue(childrenMetrics, "endTime").value
+				result = new char[](result, "$(debugMSG) eventCount: $(eventCount)\n")
+				result = new char[](result, "$(debugMSG) startTime: $(startTime)\n")
+				result = new char[](result, "$(debugMSG) endTime: $(endTime)\n\n")
+			}
+		}
+		return result
+	}
+
+	void printAllArchs(String allConfigs[]) {
+		for (int i = 0; i < allConfigs.arrayLength; i++) {
+			out.println("$(debugMSG) $(iu.intToString(i+1)). $(allConfigs[i].string)")
+		}
+	}
+
+	void printInfoArchictureToFile(char arch[], TextFile file) {
+		String compsList[] = strUtil.explode(strUtil.explode(arch, "|")[0].string, ",")
+		for (int pointer = 0; pointer < compsList.arrayLength; pointer++) {
+			if (strUtil.find(compsList[pointer].string, "../repository/http/handler/GET/") != StringUtil.NOT_FOUND) {
+				String helper[] = strUtil.explode(compsList[pointer].string, "/")
+				file.writeLine("Arch: $(helper[helper.arrayLength-1].string):")
+				return
+			}
+		}
+		out.println("$(debugMSG) Something bad's happened!")
+	}
+
+	void handlePerceptionToFile(char perceptionData[], TextFile file) {
+		JSONElement document = parser.parseDocument(perceptionData)
+		JSONElement metricsJSON = parser.getValue(document, "metrics")
+		if (metricsJSON != null) {
+			for (int pointer = 0; pointer < metricsJSON.children.arrayLength; pointer++) {
+				JSONElement childrenMetrics = metricsJSON.children[pointer]
+				char name[] = parser.getValue(childrenMetrics, "name").value
+				dec value = du.decFromString(parser.getValue(childrenMetrics, "value").value)
+				int count = iu.intFromString(parser.getValue(childrenMetrics, "count").value)
+				dec metricValue = value/count
+				file.writeLine("$(name) avg: $(du.decToString(metricValue))")
+			}
+		}
+	}
+
+	char[] getPrintArch(char arch[]) {
+		char result[] = "NONE:"
+		String compsList[] = strUtil.explode(strUtil.explode(arch, "|")[0].string, ",")
+		for (int pointer = 0; pointer < compsList.arrayLength; pointer++) {
+			if (strUtil.find(compsList[pointer].string, "../repository/http/handler/GET/") != StringUtil.NOT_FOUND) {
+				String helper[] = strUtil.explode(compsList[pointer].string, "/")
+				result = new char[]("$(debugMSG) $(helper[helper.arrayLength-1].string):")
+				return result
+			}
+		}
+		return result
+	}
+
+	void printInfoArchicture(char arch[]) {
+		String compsList[] = strUtil.explode(strUtil.explode(arch, "|")[0].string, ",")
+		for (int pointer = 0; pointer < compsList.arrayLength; pointer++) {
+			if (strUtil.find(compsList[pointer].string, "../repository/http/handler/GET/") != StringUtil.NOT_FOUND) {
+				String helper[] = strUtil.explode(compsList[pointer].string, "/")
+				out.println("$(debugMSG) $(helper[helper.arrayLength-1].string):")
+				return
+			}
+		}
+		out.println("$(debugMSG) Something bad's happened!")
+	}
+
+	void handlePerception(char perceptionData[]) {
+		JSONElement document = parser.parseDocument(perceptionData)
+		JSONElement metricsJSON = parser.getValue(document, "metrics")
+		if (metricsJSON != null) {
+			for (int pointer = 0; pointer < metricsJSON.children.arrayLength; pointer++) {
+				JSONElement childrenMetrics = metricsJSON.children[pointer]
+				char name[] = parser.getValue(childrenMetrics, "name").value
+				dec value = du.decFromString(parser.getValue(childrenMetrics, "value").value)
+				int count = iu.intFromString(parser.getValue(childrenMetrics, "count").value)
+				/*char startTime[] = parser.getValue(childrenMetrics, "startTime").value
+				char endTime[] = parser.getValue(childrenMetrics, "endTime").value*/
+				dec metricValue = value/count
+				out.println("$(debugMSG) $(name) value: $(du.decToString(value)) | count: $(iu.intToString(count)) | avg: $(du.decToString(metricValue)) ")
+			}
+		}
+		JSONElement eventsJSON = parser.getValue(document, "events")
+		if (eventsJSON != null) {
+			for (int pointer = 0; pointer < eventsJSON.children.arrayLength; pointer++) {
+				JSONElement childrenMetrics = eventsJSON.children[pointer]
+				dec eValue = du.decFromString(parser.getValue(childrenMetrics, "value").value)
+				int eCount = iu.intFromString(parser.getValue(childrenMetrics, "count").value)
+				char type[] = parser.getValue(childrenMetrics, "name").value
+				out.println("$(debugMSG) eValue: $(du.decToString(eValue)) | eCount: $(iu.intToString(eCount)) | type: $(type)")
+			}
+		}
+	}
+
+	int App:main(AppParam params[]) {
+		if (params.arrayLength < 1) {
+			out.println("$(debugMSG) use: dana InteractiveEmergentSys app.main.Component.o")
+			return 1
+		}
+		perception = new Perception(true)
+		AppParam params2[] = null
+		for (int i = 1; i < params.arrayLength; i++) {
+			params2 = new AppParam[](params2, params[i])
+		}
+		perception.setMain(params[0].string, null)
+		char cmd[] = "start"
+		while (cmd != "exit") {
+			if (cmd != "start") { commandInterpret(cmd)	}
+			out.print("emergent_sys> ")
+			cmd = in.readln()
+		}
+		return 0
+	}
+}

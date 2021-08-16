@@ -1,0 +1,11 @@
+// Hello World
+component provides App requires io.Output out, io.Input in, io.File {
+    int App:main(AppParam params[]){
+        out.print("Enter some text: ")
+        char input[] = in.readln()
+        File f = new File("out.txt", File.FILE_ACCESS_WRITE)
+        f.write(input)
+        f.close()
+        return 0
+    }
+}

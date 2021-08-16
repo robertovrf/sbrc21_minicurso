@@ -1,0 +1,4 @@
+defaultLinks:	[
+				{interface: "Exploration", component: "Exploration"}
+				]
+}
