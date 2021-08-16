@@ -1,6 +1,6 @@
 # Minicurso SBRC'21
 
-Welcome to our SBRC shortcourse. For now, we only make available the files we used during our short course presentation. We will make available the practical exercises for the book chapter soon.
+Welcome to our SBRC shortcourse. For now, we only make available the files we are going to use during our short course presentation. We will make available the practical exercises for the book chapter soon.
 
 This repository currently contains: 
 
