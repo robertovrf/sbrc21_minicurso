@@ -16,7 +16,7 @@ After installing and testing the recently installed Dana version, to execute the
 2. Compile the pal folder:
     1. Go to /pal directory;
     2. Type: "dnc . -sp ../repository".
-3. Then compile the repository folder:
+3. Then compile the /repository folder:
     1. Go to /repository directory;
     2. Type: "dnc .".
 4. Go to /pal directory;
