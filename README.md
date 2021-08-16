@@ -14,14 +14,14 @@ After installing and testing the recently installed Dana version, to execute the
 
 1. Go to shortcourse_practicals/emergent_web_server directory in your system's terminal;
 2. Compile the pal folder:
-  1. Go to /pal directory;
-  2. Type: "dnc . -sp ../repository".
+    1. Go to /pal directory;
+    2. Type: "dnc . -sp ../repository".
 3. Then compile the repository folder:
-  1. Go to /repository directory;
-  2. Type: "dnc .".
+    1. Go to /repository directory;
+    2. Type: "dnc .".
 4. Go to /pal directory;
 5. Execute the InteractiveEmergentSys tool:
-  1 Type: "dana -sp ../repository InteractiveEmergentSys.o ../repository/TCPNetwork.o"
+    1 Type: "dana -sp ../repository InteractiveEmergentSys.o ../repository/TCPNetwork.o"
 
 Now you have an instance of the InteractiveEmergentSys running executing an instance of the Emergent Web Server.
 
