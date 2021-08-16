@@ -12,7 +12,7 @@ First, please download all the content we added to this repository. After that, 
 
 After installing and testing the recently installed Dana version, to execute the Emegent Web Server using the InteractiveEmergentSys tool follow the steps below:
 
-1. Go to shortcourse_practicals/emergent_web_server directory on your system's terminal;
+1. Go to shortcourse_practicals/emergent_web_server directory in your system's terminal;
 2. Compile the pal folder:
 2.1. Go to /pal directory;
 2.2. Type: "dnc . -sp ../repository".
