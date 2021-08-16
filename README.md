@@ -23,15 +23,15 @@ After installing and testing the recently installed Dana version, to execute the
 5. Execute the InteractiveEmergentSys tool:
     1. Type: "dana -sp ../repository InteractiveEmergentSys.o ../repository/TCPNetwork.o"
 
-Now you have an instance of the InteractiveEmergentSys running executing an instance of the Emergent Web Server.
+Now you have an instance of the InteractiveEmergentSys running an instance of the Emergent Web Server.
 
-To test the web serve, go to a web browser and acess: http://localhost:2012. You should get see the index.html page located in shortcourse_practicals/emergent_web_server/repository/htdocs.
+To test the web serve, go to a web browser and acess: http://localhost:2012. You should see the index.html page in your browser. The index.html file is located at shortcourse_practicals/emergent_web_server/repository/htdocs.
 
 To see the type of commands you can execute using the IntractiveEmergentSys, type "help" into the terminal.
 
-To add a monitoring proxy to collect data from the executing web server, type into the terminal:
+To add a monitoring proxy to collect data from the executing web server, type following command into the terminal:
 
-add_proxy |../pal/monitoring/proxies/HTTPProxy.o|*(*:http.handler.GET.HTTPGET[0]:*)|
+"add_proxy |../pal/monitoring/proxies/HTTPProxy.o|*(*:http.handler.GET.HTTPGET[0]:*)|"
 
 Any questions? Please get in contact!
 
