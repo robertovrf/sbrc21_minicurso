@@ -6,7 +6,7 @@ This repository currently contains:
 
 1. A dana code example (located in shortcourse_practicals/dana_example);
 2. The InteractiveEmergentSys tool (located in shortcourse_practicals/emergent_web_server);
-3. Emergent Web Server (located in emergent_web_server);
+3. The Emergent Web Server code (located in shortcourse_practicals/emergent_web_server);
 
 First, please download all the content we added to this repository. After that, go to https://projectdana.com, download the latest available version of the language for your system (we currently support: MacOS, Ubuntu, Windows and Raspberry pi). For installation instructions, please visit: http://www.projectdana.com/dana/guide/installation
 
